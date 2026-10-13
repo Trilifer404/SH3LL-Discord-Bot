@@ -1,6 +1,6 @@
 import logging
 
-from . import clima, hora, geolocate, exchanger, wikisearch, websearch
+from . import clima, hora, geolocate, exchanger, wikisearch, websearch, conhecimento
 
 FERRAMENTAS = {
     "obter_clima": clima,
@@ -9,8 +9,8 @@ FERRAMENTAS = {
     "obter_cambio": exchanger,
     "consultar_wikipedia": wikisearch,
     "buscar_web": websearch,
+    "consultar_conhecimento": conhecimento,
 }
-
 logger = logging.getLogger("sh3ll.tools")
 
 MAX_LOG_RESULTADO = 200
