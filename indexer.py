@@ -54,7 +54,7 @@ def obter_vectorstore() -> Chroma:
         persist_directory=PASTA_CHROMA,
     )
 
-def tema_ja_indexado(vectorstore: Chroma, tema: str) -> bool:
+def alr_index(vectorstore: Chroma, tema: str) -> bool:
     """Verifica se já existe pelo menos um pedaço com esse tema nos metadados."""
     resultado = vectorstore.get(where={"tema": tema}, limit=1)
     return len(resultado["ids"]) > 0
@@ -76,7 +76,7 @@ def indexar():
     pulados = 0
 
     for tema in TEMAS:
-        if tema_ja_indexado(vectorstore, tema):
+        if alr_index(vectorstore, tema):
             print(f"Pulado (já indexado): {tema}")
             pulados += 1
             continue
