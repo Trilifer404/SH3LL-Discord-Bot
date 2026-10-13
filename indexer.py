@@ -1,31 +1,51 @@
 import os
+import wikipedia  # Importe a biblioteca wikipedia
 from langchain_community.document_loaders import WikipediaLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 
+# --- CORREÇÃO: Definir um User-Agent personalizado para a Wikipédia ---
+USER_AGENT = "SH3LL_Discord_Bot/1.0 (https://github.com/seu-usuario/sh3ll)"
+wikipedia.set_user_agent(USER_AGENT)
+# -------------------------------------------------------------------
+
 # Configurações
 PASTA_CHROMA = "./chroma_db"
-PASTA_COLECAO = "wikipedia_subset"
+NOME_COLECAO = "wikipedia_subset"
 MODELO_EMBEDDING = "nomic-embed-text"
 
-# Temas dominados pelo SH3LL.
+# Lista de temas para indexar
 TEMAS = [
     "Inconfidência Mineira",
     "Tiradentes",
-    "História do Brasil",
-    "Filosofia",
-    "Inteligência artificial",
+    "Brasil Colônia",
+    "Império do Brasil",
+    "Era Vargas",
+    "Ditadura Militar Brasileira",
+    "Idade Média",
+    "Renascimento",
+    "Revolução Industrial",
+    "Primeira Guerra Mundial",
+    "Segunda Guerra Mundial",
     "Revolução Francesa",
+    "Império Romano",
+    "Filosofia estoica",
+    "Sêneca",
+    "Marco Aurélio",
+    "Epicteto",
+    "Karl Marx",
+    "Física Quântica",
+    "Química Orgânica",
+    "Inteligência artificial",
 ]
 
 
 def indexar():
     embeddings = OllamaEmbeddings(model=MODELO_EMBEDDING)
 
-    # Cria ou recupera a coleção persistente
     vectorstore = Chroma(
-        collection_name=PASTA_COLECAO,
+        collection_name=NOME_COLECAO,
         embedding_function=embeddings,
         persist_directory=PASTA_CHROMA,
     )
@@ -38,6 +58,7 @@ def indexar():
     total = 0
     for tema in TEMAS:
         try:
+            # O User-Agent já foi definido globalmente acima
             documentos = WikipediaLoader(
                 query=tema,
                 lang="pt",
