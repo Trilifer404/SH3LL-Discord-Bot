@@ -77,7 +77,7 @@ def granite_knock(mensagens: list, first: bool = False) -> dict:
         "stream": False,
         "keep_alive": "10m",
         "options": {
-            "temperature": 0.3,
+            "temperature": 0.2,
             "num_predict": 900,
             "num_ctx": 8192,
             "num_gpu": 22,
