@@ -80,6 +80,7 @@ def granite_knock(mensagens: list, first: bool = False) -> dict:
             "temperature": 0.3,
             "num_predict": 900,
             "num_ctx": 8192,
+            "num_gpu": 22,
             "top_p": 0.9,
             "repeat_penalty": 1.05,
         },
