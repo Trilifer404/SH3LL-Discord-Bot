@@ -1,11 +1,10 @@
 import os
-import wikipedia  # Importe a biblioteca wikipedia
+import wikipedia
 from langchain_community.document_loaders import WikipediaLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 
-# --- CORREÇÃO: Definir um User-Agent personalizado para a Wikipédia ---
 USER_AGENT = "SH3LL_Discord_Bot/1.0 (https://github.com/Trilifer404/sh3lldiscordbot/)"
 wikipedia.set_user_agent(USER_AGENT)
 # -------------------------------------------------------------------
