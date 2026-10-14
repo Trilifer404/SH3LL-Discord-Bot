@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 logging.basicConfig(
@@ -14,6 +15,7 @@ from llm import get_response, reset_historico, reload_modules
 import modules
 import os
 import discord
+import storage
 
 logger = logging.getLogger("sh3ll.bot")
 
@@ -48,6 +50,7 @@ def dividir_mensagem(texto: str, limite: int = 2000) -> list[str]:
 
     return partes
 
+
 @client.event
 async def on_ready():
     await client.change_presence(
@@ -64,6 +67,7 @@ async def on_ready():
     print(f"   {client.user}  |  {len(client.guilds)} servidor(es)  |  {agora}")
     print()
 
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -79,14 +83,9 @@ async def on_message(message):
     if not prompt:
         return
 
-
     comando = prompt.lower().strip().split()
 
-
     if comando and comando[0] in ("$reset", "reset"):
-        if message.author.id != OWNER:
-            await message.channel.send("Comando restrito ao proprietário.")
-            return
         reset_historico(message.author.id)
         logger.info("Histórico resetado | usuário=%s (%s)", message.author, message.author.id)
         await message.channel.send("Histórico reiniciado.")
@@ -100,18 +99,6 @@ async def on_message(message):
         await message.channel.send(result)
         return
 
-
-    if rag_consult(prompt):
-        contexto = rag_injection(prompt)
-        if contexto == prompt:
-            async with message.channel.typing():
-                await message.channel.send(
-                    "Não consegui acessar a base RAG no momento."
-                    "Tente novamente em instantes."
-                )
-            return
-        prompt = contexto
-
     async with message.channel.typing():
         resposta = get_response(message.author.id, prompt)
         if not resposta or not resposta.strip():
@@ -122,7 +109,6 @@ async def on_message(message):
             except discord.HTTPException as e:
                 logger.error("Falha ao enviar parte da resposta: %s", e)
                 break
-
 
 
 if __name__ == "__main__":

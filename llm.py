@@ -5,6 +5,9 @@ import requests
 import json
 import logging
 import modules
+import storage
+
+storage.start_db()
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 OLLAMA_MODEL = "granite4.2:8b"
@@ -27,11 +30,10 @@ def check_datetime() -> str:
 
 
 def get_history(user_id: int) -> list:
-    if user_id not in historico_usuarios:
-        historico_usuarios[user_id] = [
-            {"role": "system", "content": check_datetime()}
-        ]
-    return historico_usuarios[user_id]
+    hist = storage.load_history(user_id)
+    if not hist:
+        hist = [{"role": "system", "content": check_datetime()}]
+    return hist
 
 
 def limitar_historico(hist: list) -> list:
@@ -41,7 +43,7 @@ def limitar_historico(hist: list) -> list:
 
 
 def reset_historico(user_id: int) -> None:
-    historico_usuarios.pop(user_id, None)
+    storage.clean_history(user_id)
 
 def reload_modules() -> str:
     try:
@@ -163,4 +165,4 @@ def get_response(user_id: int, prompt: str) -> str:
         hist.append({"role": "assistant", "content": "Tive de chamar a ferramenta muitas vezes, algo mais simples é necessário."})
         return "A operação exigiu muitas chamadas de ferramenta. Tente algo mais simples."
     finally:
-        historico_usuarios[user_id] = limitar_historico(hist)
+        storage.save_history(user_id, limitar_historico(hist))
