@@ -2,10 +2,41 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 
 PASTA_CHROMA = "./chroma_db"
-PASTA_COLECAO = "wikipedia_subset"
+NOME_COLECAO = "wikipedia_subset"
 MODELO_EMBEDDING = "nomic-embed-text"
 
 _vectorstore = None
+
+TEMAS_INDEXADOS = [
+    "Inconfidência Mineira",
+    "Tiradentes",
+    "Brasil Colônia",
+    "Império do Brasil",
+    "Era Vargas",
+    "Ditadura Militar Brasileira",
+    "Idade Média",
+    "Renascimento",
+    "Revolução Industrial",
+    "Primeira Guerra Mundial",
+    "Segunda Guerra Mundial",
+    "Revolução Francesa",
+    "Império Romano",
+    "Filosofia estoica",
+    "Sêneca",
+    "Marco Aurélio",
+    "Epicteto",
+    "Karl Marx",
+    "Física Quântica",
+    "Química Orgânica",
+    "Inteligência artificial",
+    "2023 no Brasil",
+    "2024 no Brasil",
+    "2025 no Brasil",
+    "2026 no Brasil",
+    "Enchentes no Rio Grande do Sul em 2024",
+    "Eleições municipais no Brasil em 2024",
+    "Operação Lesa Pátria",
+]
 
 
 def _obter_vectorstore():
@@ -13,7 +44,7 @@ def _obter_vectorstore():
     if _vectorstore is None:
         embeddings = OllamaEmbeddings(model=MODELO_EMBEDDING)
         _vectorstore = Chroma(
-            collection_name=PASTA_COLECAO,
+            collection_name=NOME_COLECAO,
             embedding_function=embeddings,
             persist_directory=PASTA_CHROMA,
         )
@@ -39,10 +70,14 @@ SCHEMA = {
     "function": {
         "name": "consultar_conhecimento",
         "description": (
-            "Consulta a base de conhecimento local do SH3LL, que contém artigos "
-            "sobre história, filosofia, ciência e cultura. Use SEMPRE que o usuário "
-            "perguntar sobre um tema que possa estar nessa base, antes de recorrer à "
-            "busca na web. Retorna os trechos mais relevantes para a pergunta."
+            "Consulta a base de conhecimento local do SH3LL. "
+            "Contém artigos detalhados sobre os seguintes temas: "
+            + ", ".join(TEMAS_INDEXADOS) + ". "
+            "OBRIGATÓRIO: use esta ferramenta SEMPRE que a pergunta mencionar "
+            "qualquer um desses temas, qualquer pessoa, evento ou conceito histórico. "
+            "NUNCA responda sobre esses temas de memória. "
+            "Se a informação não estiver na base, a ferramenta avisa, e aí você pode "
+            "recorrer a consultar_wikipedia ou buscar_web."
         ),
         "parameters": {
             "type": "object",
