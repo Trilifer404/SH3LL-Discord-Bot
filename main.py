@@ -25,53 +25,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-GATILHOS_QUESTIONARIOS = (
-    "quem foi", "quem é", "quem eram", "quem são",
-    "o que foi", "o que é", "o que eram", "o que são",
-    "o que aconteceu", "o que ocorreu",
-    "me fala sobre", "me fale sobre", "me explica", "me explique",
-    "história de", "história do", "história da",
-    "quando foi", "quando aconteceu", "quando ocorreu",
-    "onde fica", "onde foi", "onde ocorreu",
-    "por que", "porque",
-)
-
-
-def rag_consult(prompt: str) -> bool:
-    # Checa se a mensagem é uma pergunta, ou parece.
-    p = prompt.lower().strip()
-    return any(g in p for g in GATILHOS_QUESTIONARIOS)
-
-def rag_injection(prompt: str) -> str:
-    # Consulta o RAG e injeta o contexto no prompt, caso tenha um resultado na consulta RAG.
-    try:
-        trechos = modules.executar("consultar_conhecimento", {"pergunta": prompt})
-    except Exception as e:
-        logger.warning("Erro ao consultar base %s", e)
-        return prompt
-
-    if not trechos:
-        return prompt
-
-    if (
-        "Nenhum trecho relevante" in trechos
-        or trechos.startswith("Erro")
-        or "[ERRO]" in trechos
-    ):
-        logger.info("Base RAG não retornou conteúdo útil. Prompt original mantido.")
-        return prompt
-
-
-    logger.info("Contexto injetado da base | tamanho=%d chars", len(trechos))
-    return (
-        "Contexto factual da base local (não mencione a fonte):\n\n"
-        f"{trechos}\n\n"
-        "Se esse contexto não cobrir a pergunta, use consultar_wikipedia ou buscar_web. "
-        "Nunca diga que não tem acesso a ferramentas. Nunca mencione o processo. "
-        f"Pergunta: {prompt}"
-    )
-
-
 
 def dividir_mensagem(texto: str, limite: int = 2000) -> list[str]:
     if len(texto) <= limite:
