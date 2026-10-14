@@ -77,6 +77,31 @@ async def on_message(message):
         prompt = message.content.strip()
     elif client.user.mentioned_in(message):
         prompt = message.content.replace(f'<@{client.user.id}>', '').strip()
+
+        if message.reference and any(
+            g in prompt.lower()
+            for g in ("resuma", "resumir", "resumo", "sumarize")
+        ):
+            try:
+                original = await message.channel.fetch_message(message.reference.message_id)
+                texto_original = original.content.strip()
+                if texto_original:
+                    prompt = (
+                        f"Resuma o texto a seguir em no máximo 4 frases, "
+                        f"mantendo o tom formal e conciso de SH3LL:\n\n"
+                        f"{texto_original}"
+                    )
+                    logger.info(
+                        "Resumo solicitado | autor original=%s | tamanho=%d chars",
+                        original.author,
+                        len(texto_original),
+                    )
+                else:
+                    await message.channel.send("A mensagem respondida não tem um texto para resumir.")
+                    return
+
+            except Exception as e:
+                logger.warning("Falha ao buscar mensagem referenciada: %s", e)
     else:
         return
 
@@ -112,4 +137,5 @@ async def on_message(message):
 
 
 if __name__ == "__main__":
+    storage.start_db()
     client.run(TOKEN)
