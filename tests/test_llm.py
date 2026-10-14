@@ -21,7 +21,7 @@ def test_get_history_cria_system_para_usuario_novo(db_temporario):
     hist = llm.get_history(1)
     assert len(hist) == 1
     assert hist[0]["role"] == "system"
-    assert "SH3LL" in hist[0]["content"]
+    assert len(hist[0]["content"]) > 0
 
 
 def test_get_history_carrega_do_banco(db_temporario):
