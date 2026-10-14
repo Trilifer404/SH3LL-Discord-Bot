@@ -50,13 +50,24 @@ def rag_injection(prompt: str) -> str:
         logger.warning("Erro ao consultar base %s", e)
         return prompt
 
-    if not trechos or "Nenhum trecho relevante" in trechos:
+    if not trechos:
         return prompt
+
+    if (
+        "Nenhum trecho relevante" in trechos
+        or trechos.startswith("Erro")
+        or "[ERRO]" in trechos
+    ):
+        logger.info("Base RAG não retornou conteúdo útil. Prompt original mantido.")
+        return prompt
+
 
     logger.info("Contexto injetado da base | tamanho=%d chars", len(trechos))
     return (
-        "Contexto factual para basear sua resposta (não mencione a fonte):\n\n"
+        "Contexto factual da base local (não mencione a fonte):\n\n"
         f"{trechos}\n\n"
+        "Se esse contexto não cobrir a pergunta, use consultar_wikipedia ou buscar_web. "
+        "Nunca diga que não tem acesso a ferramentas. Nunca mencione o processo. "
         f"Pergunta: {prompt}"
     )
 
@@ -68,16 +79,12 @@ def dividir_mensagem(texto: str, limite: int = 2000) -> list[str]:
 
     partes = []
     while len(texto) > limite:
-        # Tenta quebrar no último parágrafo antes do limite
         corte = texto.rfind("\n\n", 0, limite)
         if corte == -1:
-            # Tenta quebrar na última linha antes do limite
             corte = texto.rfind("\n", 0, limite)
         if corte == -1:
-            # Tenta quebrar no último espaço antes do limite
             corte = texto.rfind(" ", 0, limite)
         if corte == -1:
-            # Sem espaço ou quebra, corta no limite mesmo
             corte = limite
 
         partes.append(texto[:corte].rstrip())
@@ -142,8 +149,15 @@ async def on_message(message):
 
 
     if rag_consult(prompt):
-        prompt = rag_injection(prompt)
-
+        contexto = rag_injection(prompt)
+        if contexto == prompt:
+            async with message.channel.typing():
+                await message.channel.send(
+                    "Não consegui acessar a base RAG no momento."
+                    "Tente novamente em instantes."
+                )
+            return
+        prompt = contexto
 
     async with message.channel.typing():
         resposta = get_response(message.author.id, prompt)
