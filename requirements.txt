@@ -1,0 +1,11 @@
+discord.py
+requests
+python-dotenv
+ddgs
+langchain-ollama
+langchain-chroma
+langchain-community
+langchain-core
+langchain-text-splitters
+wikipedia
+pytest
