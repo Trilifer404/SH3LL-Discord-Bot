@@ -7,6 +7,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     force=True,
 )
+logging.getLogger("discord.gateway").setLevel(logging.ERROR)
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -50,6 +51,33 @@ def dividir_mensagem(texto: str, limite: int = 2000) -> list[str]:
 
     return partes
 
+EXTENSOES_TEXTO = (".txt", ".md", ".log", ".csv", ".py", ".json")
+TAMANHO_MAX_ANEXO = 200_000
+
+async def extract_asset(attachments) -> str:
+    for anexo in attachments:
+        nome = anexo.filename.lower()
+        if not nome.endswith(EXTENSOES_TEXTO):
+            continue
+
+        if anexo.size > TAMANHO_MAX_ANEXO:
+            logger.warning(
+                "Anexo muito grande: %s (%d bytes)", anexo.filename, anexo.size
+            )
+            continue
+
+        try:
+            conteudo = await anexo.read()
+            try:
+                return conteudo.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                return conteudo.decode("latin-1").strip()
+        except Exception as e:
+            logger.warning("Falha ao ler anexo %s: %s", anexo.filename, e)
+
+    return ""
+
+
 
 @client.event
 async def on_ready():
@@ -73,6 +101,10 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    if message.author.bot:
+        return
+
+
     if message.guild is None:
         prompt = message.content.strip()
     elif client.user.mentioned_in(message):
@@ -80,11 +112,16 @@ async def on_message(message):
 
         if message.reference and any(
             g in prompt.lower()
-            for g in ("resuma", "resumir", "resumo", "sumarize")
+            for g in ("resuma", "resumir", "resumo", "sumarize", "nemly nemlerey", "mucho texto")
         ):
             try:
                 original = await message.channel.fetch_message(message.reference.message_id)
+
                 texto_original = original.content.strip()
+
+                if not texto_original and original.attachments:
+                    texto_original = await extract_asset(original.attachments)
+
                 if texto_original:
                     prompt = (
                         f"Resuma o texto a seguir em no máximo 4 frases, "
@@ -125,7 +162,7 @@ async def on_message(message):
         return
 
     async with message.channel.typing():
-        resposta = get_response(message.author.id, prompt)
+        resposta = await asyncio.to_thread(get_response, message.author.id, prompt)
         if not resposta or not resposta.strip():
             resposta = "Não consegui gerar uma resposta. Tente novamente."
         for parte in dividir_mensagem(resposta):
