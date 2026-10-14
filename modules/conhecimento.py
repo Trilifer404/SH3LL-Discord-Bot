@@ -1,42 +1,12 @@
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
+from indexer import TEMAS as TEMAS_INDEXADOS
 
 PASTA_CHROMA = "./chroma_db"
 NOME_COLECAO = "wikipedia_subset"
 MODELO_EMBEDDING = "nomic-embed-text"
 
 _vectorstore = None
-
-TEMAS_INDEXADOS = [
-    "Inconfidência Mineira",
-    "Tiradentes",
-    "Brasil Colônia",
-    "Império do Brasil",
-    "Era Vargas",
-    "Ditadura Militar Brasileira",
-    "Idade Média",
-    "Renascimento",
-    "Revolução Industrial",
-    "Primeira Guerra Mundial",
-    "Segunda Guerra Mundial",
-    "Revolução Francesa",
-    "Império Romano",
-    "Filosofia estoica",
-    "Sêneca",
-    "Marco Aurélio",
-    "Epicteto",
-    "Karl Marx",
-    "Física Quântica",
-    "Química Orgânica",
-    "Inteligência artificial",
-    "2023 no Brasil",
-    "2024 no Brasil",
-    "2025 no Brasil",
-    "2026 no Brasil",
-    "Enchentes no Rio Grande do Sul em 2024",
-    "Eleições municipais no Brasil em 2024",
-    "Operação Lesa Pátria",
-]
 
 
 def _obter_vectorstore():
@@ -52,16 +22,22 @@ def _obter_vectorstore():
 
 
 def executar(pergunta: str) -> str:
-    vectorstore = _obter_vectorstore()
-    resultados = vectorstore.similarity_search(pergunta, k=4)
+    try:
+        vectorstore = _obter_vectorstore()
+        resultados = vectorstore.similarity_search(
+            pergunta,
+            k=5,
+            fetch_k=20,
+            lambda_mult=0.5,
+        )
+    except Exception as e:
+        return f"Erro ao consultar base RAG: {e}"
+
 
     if not resultados:
         return "Nenhum trecho relevante encontrado na base de conhecimento."
 
-    trechos = []
-    for i, doc in enumerate(resultados, start=1):
-        trechos.append(f"[{i}] {doc.page_content}")
-
+    trechos = [f"[{i}] {doc.page_content}" for i, doc in enumerate(resultados, start=1)]
     return "\n\n".join(trechos)
 
 
