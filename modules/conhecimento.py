@@ -9,10 +9,10 @@ MODELO_EMBEDDING = "nomic-embed-text"
 _vectorstore = None
 
 
-def _obter_vectorstore():
+def obter_vectorstore():
     global _vectorstore
     if _vectorstore is None:
-        embeddings = OllamaEmbeddings(model=MODELO_EMBEDDING)
+        embeddings = OllamaEmbeddings(model=MODELO_EMBEDDING, keep_alive=30)
         _vectorstore = Chroma(
             collection_name=NOME_COLECAO,
             embedding_function=embeddings,
@@ -23,21 +23,22 @@ def _obter_vectorstore():
 
 def executar(pergunta: str) -> str:
     try:
-        vectorstore = _obter_vectorstore()
-        resultados = vectorstore.similarity_search(
-            pergunta,
-            k=5,
-            fetch_k=20,
-            lambda_mult=0.5,
+        vectorstore = obter_vectorstore()
+        resultados = vectorstore.similarity_search_with_relevance_scores(
+            pergunta, k=3
         )
     except Exception as e:
-        return f"Erro ao consultar base RAG: {e}"
+        return f"[ERRO] consultar_conhecimento: {e}"
 
+    relevantes = [(doc, score) for doc, score in resultados if score >= 0.6]
 
-    if not resultados:
+    if not relevantes:
         return "Nenhum trecho relevante encontrado na base de conhecimento."
 
-    trechos = [f"[{i}] {doc.page_content}" for i, doc in enumerate(resultados, start=1)]
+    trechos = [
+        f"[{i}] {doc.page_content}"
+        for i, (doc, _) in enumerate(resultados, start=1)
+    ]
     return "\n\n".join(trechos)
 
 
