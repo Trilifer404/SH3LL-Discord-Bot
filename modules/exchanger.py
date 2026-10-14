@@ -26,7 +26,15 @@ def executar(moeda_origem: str, moeda_destino: str, valor: float = 1.0, data: st
     except (TypeError, ValueError):
         return f"Cotação inválida para {base} → {quote}."
 
-    data_ref = dados.get("date", "data desconhecida")
+    data_ref_raw = dados.get("data_ref", "")
+    if data_ref_raw:
+        try:
+            ano, mes, dia = data_ref_raw.split("-")
+            data_ref = f"{dia}/{mes}/{ano}"
+        except ValueError:
+            data_ref = data_ref_raw
+    else:
+        data_ref = "data desconhecida"
     convertido = float(valor) * cotacao
 
     return (
