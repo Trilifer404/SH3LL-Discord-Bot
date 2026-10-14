@@ -7,7 +7,7 @@ import logging
 import modules
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-OLLAMA_MODEL = "granite4.1:8b"
+OLLAMA_MODEL = "granite4.2:8b"
 
 MAX_HISTORICO = 10
 MAX_ITER_TOOL = 6
@@ -56,7 +56,7 @@ def reload_modules() -> str:
         return f"Erro ao recarregar módulos: {e}"
 
 
-def granite_knock(mensagens: list, first: bool = False) -> dict:
+def granite_knock(mensagens: list, first = False) -> dict:
     mensagens_envio = list(mensagens)
     if first:
         mensagens_envio[0] = {
@@ -76,17 +76,27 @@ def granite_knock(mensagens: list, first: bool = False) -> dict:
         "tools": modules.schemas(),
         "stream": False,
         "keep_alive": "10m",
+        "think": False,
+        "num_gpu": 15,
         "options": {
             "temperature": 0.2,
             "num_predict": 900,
             "num_ctx": 8192,
-            "num_gpu": 22,
             "top_p": 0.9,
             "repeat_penalty": 1.05,
         },
     }
     r = requests.post(OLLAMA_URL, json=payload, timeout=300)
     r.raise_for_status()
+
+    dados = r.json()
+    logger.debug(
+        "OLLAMA | eval_count=%s | eval_duration=%s | tokens/s=%.1f",
+        dados.get("eval_count"),
+        dados.get("eval_duration"),
+        dados.get("eval_count", 0) / (dados.get("eval_duration",  1) / 1e9),
+    )
+
     return r.json()
 
 
