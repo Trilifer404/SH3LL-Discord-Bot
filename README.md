@@ -9,7 +9,7 @@
 [![Ollama](https://img.shields.io/badge/Ollama-granite4.2:8b-000000?logo=ollama&logoColor=white)](https://ollama.com/)
 [![RAG](https://img.shields.io/badge/RAG-ChromaDB-cyan)](https://www.trychroma.com/)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)](LICENSE)
-[![Discord](https://img.shields.io/badge/Discord-Bot-5865F2?logo=discord&logoColor=white)](https://discord.com/)
+[![Discord](https://img.shields.io/badge/Discord-Bot-5865F2?logo=discord&logoColor=white)]([https://discord.com/](https://discord.com/oauth2/authorize?client_id=1547749970403270676&permissions=68608&integration_type=0&scope=bot+applications.commands))
 
 </div>
 ---
