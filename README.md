@@ -6,17 +6,17 @@
 
 [![tests](https://github.com/trilifer404/sh3lldiscordbot/actions/workflows/tests.yml/badge.svg)](https://github.com/trilifer404/sh3lldiscordbot/actions/workflows/tests.yml)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Ollama](https://img.shields.io/badge/Ollama-granite4.2:8b-000000?logo=ollama&logoColor=white)](https://ollama.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Qwen3-000000?logo=ollama&logoColor=white)](https://ollama.com/)
 [![RAG](https://img.shields.io/badge/RAG-ChromaDB-cyan)](https://www.trychroma.com/)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)](LICENSE)
-[![Discord](https://img.shields.io/badge/Discord-Bot-5865F2?logo=discord&logoColor=white)]([https://discord.com/](https://discord.com/oauth2/authorize?client_id=1547749970403270676&permissions=68608&integration_type=0&scope=bot+applications.commands))
+[![Discord](https://img.shields.io/badge/Discord-Bot-5865F2?logo=discord&logoColor=white)](https://discord.com/oauth2/authorize?client_id=1547749970403270676&permissions=68608&integration_type=0&scope=bot+applications.commands)
 
 </div>
 ---
 
 ## 📖 Sobre
 
-SH3LL é um bot de Discord que roda uma LLM localmente via Ollama, sem comunicação com servidores externos. Combina tool calling sob demanda, memória persistente por usuário em SQLite e uma base vetorial (RAG) com temas indexados da Wikipédia. 
+SH3LL é um bot de Discord que roda uma LLM localmente via Ollama. O modelo e o histórico ficam locais; ferramentas de clima, câmbio, geolocalização e pesquisa fazem requisições a serviços externos. Combina tool calling sob demanda, memória persistente por usuário e canal em SQLite e uma base vetorial (RAG) com temas indexados da Wikipédia.
 <br>Com uma arquitetura modular, cada ferramenta é um arquivo independente em modules, e o modelo pode ser trocado alterando uma linha em llm.py.
 
 
@@ -24,12 +24,12 @@ SH3LL é um bot de Discord que roda uma LLM localmente via Ollama, sem comunica�
 
 ## ✨ Funcionalidades
 
-- 🧠 **LLM local** — Via Ollama, sem comunicação com servidores externos.
+- 🧠 **LLM local** — Inferência via Ollama na máquina do usuário.
 - 🛠️ **Tool calling** — Ferramentas de câmbio, localização, busca na web (via DuckDuckGo) e na Wikipédia.
-- 💾 **Banco de Dados Local** — Histórico de conversação e memórias factuais sobre o usuário em SQLite, tudo localmente.
+- 💾 **Banco de dados local** — Histórico de conversação por usuário e canal, armazenado em SQLite.
 - 📚 **RAG em subconjunto** — base vetorial com temas de história, filosofia e ciência, indexada com `nomic-embed-text`.
 - 🌍 **Multilíngue** — Responde na língua que o usuário enviar.
-- 🧪 **Testes automatizados** — 27 testes com pytest e CI via GitHub Actions
+- 🧪 **Testes automatizados** — Suíte pytest e CI via GitHub Actions
 
 ---
 
@@ -42,7 +42,7 @@ SH3LL é um bot de Discord que roda uma LLM localmente via Ollama, sem comunica�
 | 📍 | `geolocate` | Cidade → coordenadas geográficas |
 | 💱 | `obter_cambio` | Cotação entre duas moedas |
 | 📖 | `consultar_wikipedia` | Resumo factual de artigos |
-| 🔍 | `buscar_web` | Busca na web para dados atualizados|_
+| 🔍 | `buscar_web` | Busca na web para dados atualizados |
 | 🗂️ | `consultar_conhecimento` | Base vetorial local (RAG) |
 
 
@@ -58,7 +58,7 @@ source .venv/bin/activate   # Linux/macOS
 
 pip install -r requirements.txt
 
-ollama pull granite4.2:8b
+ollama pull qwen3:4b
 ollama pull nomic-embed-text
 ```
 
@@ -70,26 +70,30 @@ ollama pull nomic-embed-text
 | :--- | :--- |
 | Python | 3.12+ |
 | Ollama | latest |
-| RAM | 16 GB recomendado |
-| VRAM | 6 GB+ recomendado |
+| RAM | 16 GB |
+| GPU | RTX 4050 Laptop com 6 GB de VRAM |
 
 ### Modelos
 
 
 | Modelo | Uso |
 | :--- | :--- |
-| `granite4.2:8b` | LLM principal |
+| `qwen3:4b` | Modelo recomendado para 6 GB de VRAM |
+| `qwen3:8b` | Alternativa para comparar qualidade; pode exigir mais memória e ser mais lento |
 | `nomic-embed-text` | Embeddings do RAG |
 
 ### Modelo de linguagem
 
-O projeto foi desenvolvido e testado com o **`granite4.2:8b`** rodando via Ollama. No entanto, a arquitetura é totalmente modular e adaptável: qualquer modelo compatível com a API do Ollama pode ser usado, desde que suporte tool calling.
+O modelo configurado atualmente em `llm.py` é **`qwen3:8b`**. Para uma máquina com 16 GB de RAM e GPU com 6 GB de VRAM, recomenda-se começar com **`qwen3:4b`**, que tende a deixar mais memória livre para o contexto e demais processos. Compare o 4B e o 8B com as mesmas conversas e chamadas de ferramentas; o desempenho depende da quantização, do contexto e da memória disponível.
 
-Para trocar o modelo, altere uma única linha em `llm.py`:
+Para trocar o modelo, ajuste `OLLAMA_MODEL` em `llm.py` e baixe a tag correspondente:
 
 ```python
-OLLAMA_MODEL = "granite4.2:8b"  # troque pelo modelo que preferir
+OLLAMA_MODEL = "qwen3:4b"
 ```
+
+O contexto está configurado em `num_ctx=16384`. Se houver lentidão ou pressão de memória com o modelo escolhido, teste reduzir para `8192`.
+
 ### Bibliotecas Python
 
 Instaladas automaticamente com `pip install -r requirements.txt`:
@@ -97,7 +101,7 @@ Instaladas automaticamente com `pip install -r requirements.txt`:
 | Biblioteca | Uso |
 | :--- | :--- |
 | `discord.py` | Cliente do Discord |
-| `requests` | Chamadas HTTP ao Ollama |
+| `requests` | Chamadas HTTP ao Ollama e a serviços externos |
 | `python-dotenv` | Leitura do `.env` |
 | `ddgs` | Busca web via DuckDuckGo |
 | `langchain-ollama` | Integração com Ollama |
@@ -111,23 +115,25 @@ Instaladas automaticamente com `pip install -r requirements.txt`:
 
 # Configuração
 
-Coloque seu discord bot token na .env
+Coloque o token do bot em `.env`:
 ```dotenv
 DISCORD_TOKEN=seu_token_aqui
+SH3LL_LOG_LEVEL=INFO
 ```
-Troque o ID do Owner (Proprietário) na `main.py`
+Use `DEBUG` para habilitar logs detalhados durante o diagnóstico. O padrão é `INFO`.
+
+Configure o ID do proprietário na constante `OWNER` em `main.py`:
 
 ```python
 OWNER = 123456789012345678 # substitua pelo seu ID de usuário do Discord
 ```
 
 # ▶️ Uso
-Rode no prompt de comando:
+Com o Ollama ativo e os modelos baixados, inicie o bot pela raiz do projeto:
 ```bash
-python bot.py
+python main.py
 ```
-No discord, somente mencione o bot para que a LLM responda e funcione.
-Tenha certeza que o OLLAMA está ligado e o modelo também.
+No Discord, mencione o bot para obter uma resposta. As ferramentas online dependem de conexão com a internet.
 # Comandos inclusos:
 
 | Comando | Uso |
@@ -170,9 +176,9 @@ Essa é a arquitetura-base do projeto SH3LL Discord.
 ## 📚 Como funciona o RAG
 
 Retrieval-Augmented Generation é uma técnica de Inteligência Artificial que conecta LLMs a dados externos produzidos por humanos ou por outros datasets.
-Nesse caso, usamos o les nomic-embed-text parar fazer embeddings dos artigos da Wikipédia, uma fonte confiável da web, armazenamos esses artigos no ChromeDB
-<br>No conceito inicial do projeto, foi pensado que o RAG seria uma fonte de conhecimento opcional quando não se tem o dado necessário dentro dos parâmetros do modelo.
-Mostrou bons resultados no modelo `granite4.2:8b`.
+Neste projeto, usamos `nomic-embed-text` para gerar embeddings dos artigos da Wikipédia e armazenamos os vetores no ChromaDB.
+<br>O RAG complementa o modelo com trechos recuperados da base local quando o assunto indexado é relevante para a pergunta.
+O resultado depende dos temas indexados e do modelo de embeddings; a inferência de respostas é feita pelo modelo configurado no Ollama.
 
 
 ```mermaid
@@ -184,8 +190,6 @@ Mostrou bons resultados no modelo `granite4.2:8b`.
         C --> G[Modelo <br/>sintetiza]
         G --> R[Resposta final]
    ```
-Adicione esta seção no README, logo após **Como funciona o RAG**. Ela cobre exatamente o que você levantou: a base vetorial não acompanha o repositório e o usuário precisa construí-la.
-
 ---
 
 ## 🧱 Construindo sua base vetorial
