@@ -3,7 +3,7 @@ import logging
 from logging_config import Sh3llFormatter, configure_logging
 
 
-def test_formatter_exibe_hora_nivel_componente_e_mensagem():
+def test_formatter_exibe_hora_nivel_nome_completo_e_mensagem():
     record = logging.LogRecord(
         "sh3ll.llm",
         logging.INFO,
@@ -17,7 +17,7 @@ def test_formatter_exibe_hora_nivel_componente_e_mensagem():
     linha = Sh3llFormatter().format(record)
 
     assert "INFO" in linha
-    assert "LLM" in linha
+    assert "sh3ll.llm" in linha
     assert "Resposta gerada" in linha
     assert "\033[" not in linha
 

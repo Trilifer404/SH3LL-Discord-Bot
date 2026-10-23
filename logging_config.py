@@ -11,22 +11,14 @@ class Sh3llFormatter(logging.Formatter):
         logging.CRITICAL: "\033[1;31m",
     }
     RESET = "\033[0m"
-    COMPONENTS = {
-        "sh3ll.bot": "BOT",
-        "sh3ll.llm": "LLM",
-        "sh3ll.tools": "TOOLS",
-        "sh3ll.storage": "STORAGE",
-    }
-
     def __init__(self, use_color: bool = False) -> None:
         super().__init__(
-            fmt="%(asctime)s | %(levelname)-8s | %(component)-7s | %(message)s",
+            fmt="%(asctime)s | %(levelname)-8s | %(name)s >_ %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         self.use_color = use_color
 
     def format(self, record: logging.LogRecord) -> str:
-        record.component = self.COMPONENTS.get(record.name, record.name.upper())
         formatted = super().format(record)
         color = self.COLORS.get(record.levelno)
         if self.use_color and color:

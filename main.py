@@ -1,26 +1,23 @@
 import asyncio
 import logging
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%H:%M:%S",
-    force=True,
-)
-logging.getLogger("discord.gateway").setLevel(logging.ERROR)
-
+import os
 from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
+
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
+from logging_config import configure_logging
+
+configure_logging()
+
 from llm import get_response, reset_historico, reload_modules
 import modules
-import os
 import discord
 import storage
 
-logger = logging.getLogger("sh3ll.bot")
+logger = logging.getLogger("sh3ll.main")
 
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER = 795763724970754119
 
@@ -170,6 +167,12 @@ async def on_message(message):
         return
 
     async with message.channel.typing():
+        logger.info(
+            "Enviando prompt ao modelo | usuário=%s | canal=%s | caracteres=%d",
+            message.author.id,
+            channel_id if channel_id is not None else "DM",
+            len(prompt),
+        )
         resposta = await asyncio.to_thread(get_response, message.author.id, channel_id, prompt)
         if not resposta or not resposta.strip():
             resposta = "Não consegui gerar uma resposta. Tente novamente."
