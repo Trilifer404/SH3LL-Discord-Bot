@@ -1,8 +1,15 @@
 import requests
 
+from .common import ToolError
+
+
 def executar(cidade: str) -> str:
+    if not isinstance(cidade, str) or not cidade.strip() or len(cidade.strip()) > 200:
+        raise ToolError("informe uma localidade com até 200 caracteres.")
+    cidade = cidade.strip()
+
     url = "https://nominatim.openstreetmap.org/search"
-    params= {
+    params = {
         "q": cidade,
         "format": "json",
         "limit": 1,
@@ -11,20 +18,46 @@ def executar(cidade: str) -> str:
     headers = {
         "User-Agent": "SH3LL-Bot/0.4 (contato: trilifer404@gmail.com)"
     }
-    r = requests.get(url, params=params, headers=headers, timeout=10)
-    r.raise_for_status()
-    data = r.json()
-    if not data:
-        return f"Não encontrei coordenadas para {cidade}"
-    local = data[0]
-    end = local.get("address", {})
-    return (
-        f"Cidade: {end.get('city', cidade)}, "
-        f"Estado: {end.get('state', 'desconhecido')}, " 
-        f"País: {end.get('country', 'desconhecido')}, "
-        f"Latitude: {local['lat']}, longitude: {local['lon']}"
+    try:
+        r = requests.get(url, params=params, headers=headers, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+    except requests.exceptions.RequestException as exc:
+        raise ToolError("serviço de geolocalização indisponível no momento.") from exc
 
+    if not isinstance(data, list):
+        raise ToolError("serviço de geolocalização retornou uma resposta inválida.")
+    if not data:
+        return f"Não encontrei coordenadas para {cidade}."
+
+    local = data[0]
+    if not isinstance(local, dict):
+        raise ToolError("serviço de geolocalização retornou um resultado inválido.")
+    try:
+        latitude = float(local["lat"])
+        longitude = float(local["lon"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ToolError("serviço de geolocalização retornou coordenadas inválidas.") from exc
+    if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+        raise ToolError("serviço de geolocalização retornou coordenadas inválidas.")
+
+    end = local.get("address", {})
+    if not isinstance(end, dict):
+        end = {}
+    nome_cidade = (
+            end.get("city")
+            or end.get("town")
+            or end.get("village")
+            or end.get("municipality")
+            or cidade
     )
+    return (
+        f"Cidade: {nome_cidade}, "
+        f"Estado: {end.get('state', 'desconhecido')}, "
+        f"País: {end.get('country', 'desconhecido')}, "
+        f"Latitude: {latitude}, longitude: {longitude}"
+    )
+
 
 SCHEMA = {
     "type": "function",

@@ -1,6 +1,18 @@
+import re
+
 import requests
 
+from .common import ToolError
+
+
 def executar(topico: str, idioma: str = "pt") -> str:
+    if not isinstance(topico, str) or not topico.strip() or len(topico.strip()) > 300:
+        raise ToolError("informe um tópico com até 300 caracteres.")
+    if not isinstance(idioma, str) or not re.fullmatch(r"[a-z]{2,3}", idioma.lower()):
+        raise ToolError("o idioma deve ser um código válido de 2 ou 3 letras.")
+    topico = topico.strip()
+    idioma = idioma.lower()
+
     url = f"https://{idioma}.wikipedia.org/w/api.php"
     headers = {
         "User-Agent": "SH3LL-Bot/1.0 (LLM Discord Bot; contato: trilifer404@gmail.com)"
@@ -18,14 +30,20 @@ def executar(topico: str, idioma: str = "pt") -> str:
         r = requests.get(url, params=params_busca, headers=headers, timeout=10)
         r.raise_for_status()
         dados = r.json()
-    except requests.exceptions.RequestException as e:
-        return f"Erro ao buscar na Wikipédia: {e}"
+    except requests.exceptions.RequestException as exc:
+        raise ToolError("Wikipédia está indisponível no momento.") from exc
 
-    resultados = dados.get("query", {}).get("search", [])
+    resultados = (
+        dados.get("query", {}).get("search", [])
+        if isinstance(dados, dict) and isinstance(dados.get("query"), dict)
+        else []
+    )
     if not resultados:
         return f"Não encontrei informações sobre '{topico}' na Wikipédia."
 
-    titulo = resultados[0]["title"]
+    titulo = resultados[0].get("title") if isinstance(resultados[0], dict) else None
+    if not isinstance(titulo, str) or not titulo:
+        raise ToolError("Wikipédia retornou um resultado inválido.")
 
     # Etapa 2: obter o resumo do artigo via Action API
     params_resumo = {
@@ -40,16 +58,25 @@ def executar(topico: str, idioma: str = "pt") -> str:
         r = requests.get(url, params=params_resumo, headers=headers, timeout=10)
         r.raise_for_status()
         dados = r.json()
-    except requests.exceptions.RequestException as e:
-        return f"Erro ao obter o resumo: {e}"
+    except requests.exceptions.RequestException as exc:
+        raise ToolError("não consegui obter o resumo da Wikipédia.") from exc
 
-    paginas = dados.get("query", {}).get("pages", {})
+    paginas = (
+        dados.get("query", {}).get("pages", {})
+        if isinstance(dados, dict) and isinstance(dados.get("query"), dict)
+        else {}
+    )
     for page_id, pagina in paginas.items():
-        extract = pagina.get("extract", "").strip()
+        if not isinstance(pagina, dict):
+            continue
+        extract_raw = pagina.get("extract", "")
+        if not isinstance(extract_raw, str):
+            continue
+        extract = extract_raw.strip()[:1500]
         if extract:
             return f"{titulo}: {extract}"
 
-    return f"Encontrei o artigo '{titulo}', mas não consegui extrair o resumo."
+    raise ToolError(f"encontrei '{titulo}', mas não consegui extrair o resumo.")
 
 
 SCHEMA = {

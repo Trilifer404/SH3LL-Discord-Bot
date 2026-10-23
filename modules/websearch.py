@@ -1,24 +1,38 @@
 from ddgs import DDGS
 
+from .common import ToolError
+
+
 def executar(consulta: str, max_resultados: int = 5) -> str:
+    if not isinstance(consulta, str) or not consulta.strip() or len(consulta.strip()) > 500:
+        raise ToolError("informe uma consulta com até 500 caracteres.")
+    if (
+            not isinstance(max_resultados, int)
+            or isinstance(max_resultados, bool)
+            or not 1 <= max_resultados <= 10
+    ):
+        raise ToolError("o número de resultados deve ser um inteiro entre 1 e 10.")
+
     try:
-        limite = min(max(max_resultados, 1), 10)
-        resultados = DDGS().text(consulta, region="br-pt", max_results=limite)
+        limite = max_resultados
+        resultados = DDGS().text(consulta.strip(), region="br-pt", max_results=limite)
 
         if not resultados:
-            return f"Nenhum resultado encontrado para '{consulta}'"
+            return f"Nenhum resultado encontrado para '{consulta.strip()}'."
 
         partes = [f"Resultados para '{consulta}'"]
-        for i, r  in enumerate(resultados, start=1):
+        for i, r in enumerate(resultados, start=1):
             titulo = r.get("title", "Sem Título")
             link = r.get("href", "Sem Link")
             trecho = r.get("body", "")
             partes.append(f"{i}. {titulo}\n URL: {link}\n     {trecho}")
 
-        return "\n\n".join(partes)
-
     except Exception as e:
-        return f"Erro ao buscar na web: {e}"
+        if isinstance(e, ToolError):
+            raise
+        raise ToolError("serviço de busca indisponível no momento.") from e
+
+    return "\n\n".join(partes)
 
 
 SCHEMA = {

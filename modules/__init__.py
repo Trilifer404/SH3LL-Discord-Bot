@@ -1,5 +1,6 @@
 import logging
 
+from .common import ToolError
 from . import clima, hora, geolocate, exchanger, wikisearch, websearch, conhecimento
 
 FERRAMENTAS = {
@@ -16,11 +17,11 @@ logger = logging.getLogger("sh3ll.tools")
 MAX_LOG_RESULTADO = 200
 
 
-def schemas() -> list:
+def schemas() -> list[dict]:
     return [mod.SCHEMA for mod in FERRAMENTAS.values()]
 
 
-def executar(nome: str, argumentos: dict) -> str:
+def executar(nome: str, argumentos: object) -> str:
     logger.debug("Chamando ferramenta '%s' | args=%s", nome, argumentos)
 
     if nome not in FERRAMENTAS:
@@ -28,16 +29,26 @@ def executar(nome: str, argumentos: dict) -> str:
             "Ferramenta '%s' não registrada. Disponíveis: %s",
             nome, list(FERRAMENTAS.keys()),
         )
-        return f"Ferramenta '{nome}' não encontrada."
+        return f"[ERRO] {nome}: ferramenta não encontrada."
+    if not isinstance(argumentos, dict):
+        logger.warning("Argumentos inválidos para '%s': esperado um objeto.", nome)
+        return f"[ERRO] {nome}: argumentos devem ser um objeto."
 
     try:
         resultado = FERRAMENTAS[nome].executar(**argumentos)
-    except TypeError as e:
-        logger.error("Erro de argumento em '%s' | args=%s | erro=%s", nome, argumentos, e)
-        return f"Argumentos inválidos para '{nome}': {e}"
-    except Exception as e:
+    except ToolError as e:
+        logger.info("Falha esperada em '%s': %s", nome, e)
+        return f"[ERRO] {nome}: {e}"
+    except (TypeError, ValueError) as e:
+        logger.info("Argumentos inválidos para '%s' | erro=%s", nome, e)
+        return f"[ERRO] {nome}: argumentos inválidos."
+    except Exception:
         logger.exception("Erro inesperado em '%s' | args=%s", nome, argumentos)
-        return f"Erro ao executar {nome}: {e}"
+        return f"[ERRO] {nome}: falha interna ao executar a ferramenta."
+
+    if not isinstance(resultado, str):
+        logger.error("Ferramenta '%s' retornou tipo inesperado: %s", nome, type(resultado).__name__)
+        return f"[ERRO] {nome}: resposta inválida da ferramenta."
 
     if nome in ("consultar_wikipedia", "buscar_web"):
         consulta = argumentos.get("topico") or argumentos.get("consulta") or "?"

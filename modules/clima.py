@@ -1,21 +1,51 @@
+import math
+
 import requests
 
+from .common import ToolError
+
+
 def executar(latitude: float, longitude: float) -> str:
-    """Busca clima atual via Open-Meteo."""
+    if isinstance(latitude, bool) or isinstance(longitude, bool):
+        raise ToolError("latitude e longitude devem ser números.")
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+    except (TypeError, ValueError) as exc:
+        raise ToolError("latitude e longitude devem ser números.") from exc
+
+    if not math.isfinite(latitude) or not -90 <= latitude <= 90:
+        raise ToolError("latitude deve estar entre -90 e 90.")
+    if not math.isfinite(longitude) or not -180 <= longitude <= 180:
+        raise ToolError("longitude deve estar entre -180 e 180.")
+
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": latitude,
         "longitude": longitude,
         "current": ["temperature_2m", "precipitation", "wind_speed_10m"],
-        "timezone": "America/Sao_Paulo",
+        "timezone": "auto",
     }
-    r = requests.get(url, params=params, timeout=10)
-    r.raise_for_status()
-    c = r.json().get("current", {})
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        dados = r.json()
+    except requests.exceptions.RequestException as exc:
+        raise ToolError("serviço de clima indisponível no momento.") from exc
+    except ValueError as exc:
+        raise ToolError("serviço de clima retornou uma resposta inválida.") from exc
+
+    c = dados.get("current") if isinstance(dados, dict) else None
+    if not isinstance(c, dict) or any(
+            c.get(campo) is None
+            for campo in ("temperature_2m", "precipitation", "wind_speed_10m")
+    ):
+        raise ToolError("serviço de clima não retornou dados completos.")
+
     return (
-        f"Temperatura: {c.get('temperature_2m')}°C, "
-        f"Precipitação: {c.get('precipitation')}mm, "
-        f"Vento: {c.get('wind_speed_10m')} km/h"
+        f"Temperatura: {c['temperature_2m']}°C, "
+        f"Precipitação: {c['precipitation']}mm, "
+        f"Vento: {c['wind_speed_10m']} km/h"
     )
 
 

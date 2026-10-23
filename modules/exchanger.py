@@ -1,9 +1,38 @@
+import math
+import re
+from datetime import date
+
 import requests
+
+from .common import ToolError
 
 
 def executar(moeda_origem: str, moeda_destino: str, valor: float = 1.0, data: str | None = None) -> str:
+    if not isinstance(moeda_origem, str) or not isinstance(moeda_destino, str):
+        raise ToolError("informe códigos de moeda válidos.")
     base = moeda_origem.upper().strip()
     quote = moeda_destino.upper().strip()
+    if not re.fullmatch(r"[A-Z]{3}", base) or not re.fullmatch(r"[A-Z]{3}", quote):
+        raise ToolError("os códigos de moeda devem ter três letras ISO 4217.")
+
+    if isinstance(valor, bool):
+        raise ToolError("o valor a converter deve ser numérico.")
+    try:
+        valor = float(valor)
+    except (TypeError, ValueError) as exc:
+        raise ToolError("o valor a converter deve ser numérico.") from exc
+    if not math.isfinite(valor) or valor < 0:
+        raise ToolError("o valor a converter deve ser um número finito não negativo.")
+
+    if data is not None:
+        if not isinstance(data, str):
+            raise ToolError("a data deve usar o formato YYYY-MM-DD.")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", data):
+            raise ToolError("a data deve usar o formato YYYY-MM-DD.")
+        try:
+            date.fromisoformat(data)
+        except ValueError as exc:
+            raise ToolError("a data deve usar o formato YYYY-MM-DD.") from exc
 
     url = f"https://api.frankfurter.dev/v2/rate/{base}/{quote}"
     params = {}
@@ -14,19 +43,21 @@ def executar(moeda_origem: str, moeda_destino: str, valor: float = 1.0, data: st
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
         dados = r.json()
-    except requests.exceptions.RequestException as e:
-        return f"Erro ao consultar cotação: {e}"
+    except requests.exceptions.RequestException as exc:
+        raise ToolError("serviço de câmbio indisponível no momento.") from exc
 
+    if not isinstance(dados, dict):
+        raise ToolError("serviço de câmbio retornou uma resposta inválida.")
     cotacao_raw = dados.get("rate")
     if cotacao_raw is None:
         return f"Não encontrei cotação para {base} → {quote}."
+    if isinstance(cotacao_raw, bool) or not isinstance(cotacao_raw, (int, float)):
+        raise ToolError("serviço de câmbio retornou uma cotação inválida.")
+    cotacao: float = float(cotacao_raw)
+    if not math.isfinite(cotacao) or cotacao <= 0:
+        raise ToolError("serviço de câmbio retornou uma cotação inválida.")
 
-    try:
-        cotacao = float(cotacao_raw)
-    except (TypeError, ValueError):
-        return f"Cotação inválida para {base} → {quote}."
-
-    data_ref_raw = dados.get("data_ref", "")
+    data_ref_raw = dados.get("date", "")
     if data_ref_raw:
         try:
             ano, mes, dia = data_ref_raw.split("-")
@@ -35,7 +66,8 @@ def executar(moeda_origem: str, moeda_destino: str, valor: float = 1.0, data: st
             data_ref = data_ref_raw
     else:
         data_ref = "data desconhecida"
-    convertido = float(valor) * cotacao
+
+    convertido = valor * cotacao
 
     return (
         f"1 {base} vale {cotacao:.4f} {quote}. "

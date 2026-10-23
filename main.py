@@ -85,14 +85,19 @@ async def on_ready():
         activity=discord.Streaming(
             name="Modular e preciso.",
             url="https://www.twitch.tv/trilifer"))
-
     print(r"""
-   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-   █  S H 3 L L   ::   ONLINE  █
-   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+      ┌──────────────────────────────────────────────┐
+      │  S H 3 L L   ::   I N I T I A L I Z I N G    │
+      └──────────────────────────────────────────────┘
+      [OK] LLM local           ......... conectado
+      [OK] Módulos             ......... 7 registrados
+      [OK] Base vetorial       ......... pronta
+      [OK] Gateway Discord     ......... online
+      ──────────────────────────────────────────────
     """)
-    agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f"   {client.user}  |  {len(client.guilds)} servidor(es)  |  {agora}")
+    print(f"  Sessão iniciada em {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}")
+    print(f"  Conectado como {client.user}")
+    print(f"  Servidores: {len(client.guilds)}")
     print()
 
 
@@ -103,6 +108,9 @@ async def on_message(message):
 
     if message.author.bot:
         return
+
+    channel_id = message.channel.id if message.guild is not None else None
+
 
 
     if message.guild is None:
@@ -148,8 +156,8 @@ async def on_message(message):
     comando = prompt.lower().strip().split()
 
     if comando and comando[0] in ("$reset", "reset"):
-        reset_historico(message.author.id)
-        logger.info("Histórico resetado | usuário=%s (%s)", message.author, message.author.id)
+        reset_historico(message.author.id, channel_id)
+        logger.info("Histórico resetado | usuário=%s (%s) | channel=%s", message.author, message.author.id, channel_id)
         await message.channel.send("Histórico reiniciado.")
         return
 
@@ -162,7 +170,7 @@ async def on_message(message):
         return
 
     async with message.channel.typing():
-        resposta = await asyncio.to_thread(get_response, message.author.id, prompt)
+        resposta = await asyncio.to_thread(get_response, message.author.id, channel_id, prompt)
         if not resposta or not resposta.strip():
             resposta = "Não consegui gerar uma resposta. Tente novamente."
         for parte in dividir_mensagem(resposta):
